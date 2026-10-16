@@ -1,6 +1,5 @@
 import axios from 'axios';
 import NodeCache from 'node-cache';
-import { cache } from 'react';
 
 const weatherCache = new NodeCache({stdTTL: 900});
 
@@ -20,8 +19,8 @@ export async function getWeatherByCity(city){
     const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=pt&format=json`;
     const geoResponse = await axios.get(geoUrl);
 
-    if (geoResponse.data.results || geoResponse.data.results.length ===0){
-        throw new Error('CITY IS NOT FOUNDED')
+    if (!geoResponse.data.results || geoResponse.data.results.length ===0){
+        throw new Error('CITY IS NOT FOUND')
     }
 
     
