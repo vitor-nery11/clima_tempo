@@ -1,27 +1,54 @@
 // frontend/src/App.jsx
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, Wind, Droplets, Thermometer } from 'lucide-react';
-import { fetchWeather } from './services/api';
+import { Search, Wind, Droplets, Thermometer, MapPin } from 'lucide-react';
+import { fetchWeather, fetchWeatherByCoords } from './services/api';
 import { getWeatherInfo } from './utils/weatherIcons';
 import { HourlyChart } from './components/HourlyChart';
 
 export default function App() {
   const [cityInput, setCityInput] = useState('');
-  const [searchedCity, setSearchedCity] = useState('São Paulo'); // Cidade inicial padrão
+  const [searchParams, setSearchParams] = useState({ type: 'city', value: 'São Paulo' });
+  const [isLocating, setIsLocating] = useState(false);
 
-  // O useQuery busca os dados no Back-end automaticamente sempre que "searchedCity" mudar
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['weather', searchedCity],
-    queryFn: () => fetchWeather(searchedCity),
-    retry: false, // Se a cidade não existir, mostra o erro na hora sem tentar repetir
+    queryKey: ['weather', searchParams],
+    queryFn: () => searchParams.type === 'city'
+      ? fetchWeather(searchParams.value)
+      : fetchWeatherByCoords(searchParams.value.lat, searchParams.value.lon),
+    retry: false,
   });
 
   const handleSearch = (e) => {
     e.preventDefault();
     if (cityInput.trim()) {
-      setSearchedCity(cityInput.trim());
+      setSearchParams({ type: 'city', value: cityInput.trim() });
     }
+  };
+
+  const handleGeoLocation = () => {
+    if (!navigator.geolocation) {
+      window.alert('Seu navegador não suporta geolocalização.');
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setSearchParams({
+          type: 'coords',
+          value: {
+            lat: position.coords.latitude,
+            lon: position.coords.longitude,
+          },
+        });
+        setIsLocating(false);
+      },
+      () => {
+        window.alert('Não foi possível obter sua localização. Verifique a permissão do navegador e tente novamente.');
+        setIsLocating(false);
+      }
+    );
   };
 
   const weather = data?.data;
@@ -49,6 +76,16 @@ export default function App() {
             >
               <Search className="w-4 h-4" />
               Buscar
+            </button>
+            <button
+              type="button"
+              onClick={handleGeoLocation}
+              disabled={isLocating}
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 disabled:opacity-50 rounded-xl font-medium flex items-center gap-2 cursor-pointer transition"
+              aria-label="Usar minha localização"
+            >
+              <MapPin className="w-4 h-4" />
+              {isLocating ? 'Localizando...' : 'Usar localização'}
             </button>
           </form>
         </header>

@@ -64,3 +64,39 @@ export async function getWeatherByCity(city){
 
     return {source: 'api', data: formattedData};
 }
+
+
+export async function getWeatherByCoords(lat,lon){
+    const cacheKey = `coords:${Number(lat).toFixed(2)},${Number(lon).toFixed(2)}`;
+    const cacheData = weatherCache.get(cacheKey);
+
+    if(cacheData) return { source: 'cache', data:cacheData};
+
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,weather_code,is_day&hourly=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=7`;
+    const {data: raw} = await axios.get(weatherUrl);
+
+    const formattedData = {
+    location: { name: 'Sua Localização', state: 'GPS', country: '' },
+    current: {
+      temp: Math.round(raw.current.temperature_2m),
+      feelsLike: Math.round(raw.current.apparent_temperature),
+      humidity: raw.current.relative_humidity_2m,
+      windSpeed: Math.round(raw.current.wind_speed_10m),
+      weatherCode: raw.current.weather_code,
+      isDay: raw.current.is_day === 1,
+    },
+    hourly: raw.hourly.time.slice(0, 24).map((time, i) => ({
+      time: time.split('T')[1],
+      temp: Math.round(raw.hourly.temperature_2m[i]),
+    })),
+    daily: raw.daily.time.map((date, i) => ({
+      date,
+      maxTemp: Math.round(raw.daily.temperature_2m_max[i]),
+      minTemp: Math.round(raw.daily.temperature_2m_min[i]),
+      weatherCode: raw.daily.weather_code[i],
+    })),
+  };
+
+  weatherCache.set(cacheKey, formattedData);
+  return { source: 'api', data: formattedData };
+}
