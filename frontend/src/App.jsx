@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Search, Wind, Droplets, Thermometer } from 'lucide-react';
 import { fetchWeather } from './services/api';
 import { getWeatherInfo } from './utils/weatherIcons';
+import { HourlyChart } from './components/HourlyChart';
 
 export default function App() {
   const [cityInput, setCityInput] = useState('');
@@ -104,6 +105,8 @@ export default function App() {
                 </div>
               </div>
             </div>
+
+            <HourlyChart data={weather.hourly} />
 
             {/* Previsão para os próximos 7 dias */}
             <div className="bg-white/10 backdrop-blur-md border border-white/15 rounded-3xl p-6">
